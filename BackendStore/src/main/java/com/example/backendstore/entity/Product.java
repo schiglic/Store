@@ -17,22 +17,18 @@ public class Product {
 
     private String description;
 
-    private String imageUrl;
-
-    @ManyToOne
-    @JoinColumn(name = "category_id")
-    private Category category;
+    @Column(name = "image_url")
+    private String imageUrl; // Шлях до файлу зображення
 
     // Порожній конструктор
     public Product() {}
 
     // Конструктор з параметрами
-    public Product(String name, Double price, String description, String imageUrl, Category category) {
+    public Product(String name, Double price, String description, String imageUrl) {
         this.name = name;
         this.price = price;
         this.description = description;
         this.imageUrl = imageUrl;
-        this.category = category;
     }
 
     // Геттери і сеттери
@@ -46,6 +42,4 @@ public class Product {
     public void setDescription(String description) { this.description = description; }
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
-    public Category getCategory() { return category; }
-    public void setCategory(Category category) { this.category = category; }
 }

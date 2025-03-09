@@ -12,12 +12,16 @@ public class Category {
     @Column(nullable = false)
     private String name;
 
+    @Column(name = "image_url")
+    private String imageUrl; // Шлях до файлу зображення
+
     // Порожній конструктор
     public Category() {}
 
     // Конструктор з параметрами
-    public Category(String name) {
+    public Category(String name, String imageUrl) {
         this.name = name;
+        this.imageUrl = imageUrl;
     }
 
     // Геттери і сеттери
@@ -25,4 +29,6 @@ public class Category {
     public void setId(Long id) { this.id = id; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 }
