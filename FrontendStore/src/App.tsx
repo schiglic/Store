@@ -29,15 +29,27 @@ const App: React.FC = () => {
     const [productDescription, setProductDescription] = useState('');
     const [productImage, setProductImage] = useState<File | null>(null);
     const [editProductId, setEditProductId] = useState<number | null>(null);
-    const [deleteId, setDeleteId] = useState<number | null>(null); // Для обох (категорій і продуктів)
-    const [deleteType, setDeleteType] = useState<'category' | 'product' | null>(null); // Тип видалення
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [deleteType, setDeleteType] = useState<'category' | 'product' | null>(null);
+    const [showAddSuccess, setShowAddSuccess] = useState(false); // Модальне вікно для додавання
+    const [showDeleteSuccess, setShowDeleteSuccess] = useState(false); // Модальне вікно для видалення
 
     const [deleteCategory] = useDeleteCategoryMutation();
 
     useEffect(() => {
         fetchCategories();
         fetchProducts();
-    }, []);
+
+        // Автоматичне закриття модальних вікон через 2 секунди
+        if (showAddSuccess) {
+            const timer = setTimeout(() => setShowAddSuccess(false), 2000);
+            return () => clearTimeout(timer);
+        }
+        if (showDeleteSuccess) {
+            const timer = setTimeout(() => setShowDeleteSuccess(false), 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [showAddSuccess, showDeleteSuccess]);
 
     const fetchCategories = async () => {
         try {
@@ -105,7 +117,7 @@ const App: React.FC = () => {
                 await axios.post('http://localhost:8080/api/products', formData, {
                     headers: { 'Content-Type': 'multipart/form-data' },
                 });
-                alert('Продукт додано!');
+                setShowAddSuccess(true); // Показати модальне вікно при додаванні
             }
             setProductName('');
             setProductPrice(0);
@@ -127,7 +139,7 @@ const App: React.FC = () => {
                     alert('Категорію видалено!');
                 } else if (deleteType === 'product') {
                     await axios.delete(`http://localhost:8080/api/products/${deleteId}`);
-                    alert('Продукт видалено!');
+                    setShowDeleteSuccess(true); // Показати модальне вікно при видаленні
                 }
                 setDeleteId(null);
                 setDeleteType(null);
@@ -286,6 +298,24 @@ const App: React.FC = () => {
                     ))}
                 </div>
             </div>
+
+            {/* Модальне вікно для успішного додавання */}
+            {showAddSuccess && (
+                <div className="modal">
+                    <div className="modal-content">
+                        <h3>Продукт успішно додано!</h3>
+                    </div>
+                </div>
+            )}
+
+            {/* Модальне вікно для успішного видалення */}
+            {showDeleteSuccess && (
+                <div className="modal">
+                    <div className="modal-content">
+                        <h3>Продукт успішно видалено!</h3>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
