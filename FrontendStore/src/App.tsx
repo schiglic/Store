@@ -31,8 +31,12 @@ const App: React.FC = () => {
     const [editProductId, setEditProductId] = useState<number | null>(null);
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [deleteType, setDeleteType] = useState<'category' | 'product' | null>(null);
-    const [showAddSuccess, setShowAddSuccess] = useState(false); // Модальне вікно для додавання
-    const [showDeleteSuccess, setShowDeleteSuccess] = useState(false); // Модальне вікно для видалення
+    const [showAddCategorySuccess, setShowAddCategorySuccess] = useState(false);
+    const [showDeleteCategorySuccess, setShowDeleteCategorySuccess] = useState(false);
+    const [showUpdateCategorySuccess, setShowUpdateCategorySuccess] = useState(false);
+    const [showAddProductSuccess, setShowAddProductSuccess] = useState(false);
+    const [showDeleteProductSuccess, setShowDeleteProductSuccess] = useState(false);
+    const [showUpdateProductSuccess, setShowUpdateProductSuccess] = useState(false);
 
     const [deleteCategory] = useDeleteCategoryMutation();
 
@@ -41,15 +45,31 @@ const App: React.FC = () => {
         fetchProducts();
 
         // Автоматичне закриття модальних вікон через 2 секунди
-        if (showAddSuccess) {
-            const timer = setTimeout(() => setShowAddSuccess(false), 2000);
+        if (showAddCategorySuccess) {
+            const timer = setTimeout(() => setShowAddCategorySuccess(false), 2000);
             return () => clearTimeout(timer);
         }
-        if (showDeleteSuccess) {
-            const timer = setTimeout(() => setShowDeleteSuccess(false), 2000);
+        if (showDeleteCategorySuccess) {
+            const timer = setTimeout(() => setShowDeleteCategorySuccess(false), 2000);
             return () => clearTimeout(timer);
         }
-    }, [showAddSuccess, showDeleteSuccess]);
+        if (showUpdateCategorySuccess) {
+            const timer = setTimeout(() => setShowUpdateCategorySuccess(false), 2000);
+            return () => clearTimeout(timer);
+        }
+        if (showAddProductSuccess) {
+            const timer = setTimeout(() => setShowAddProductSuccess(false), 2000);
+            return () => clearTimeout(timer);
+        }
+        if (showDeleteProductSuccess) {
+            const timer = setTimeout(() => setShowDeleteProductSuccess(false), 2000);
+            return () => clearTimeout(timer);
+        }
+        if (showUpdateProductSuccess) {
+            const timer = setTimeout(() => setShowUpdateProductSuccess(false), 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [showAddCategorySuccess, showDeleteCategorySuccess, showUpdateCategorySuccess, showAddProductSuccess, showDeleteProductSuccess, showUpdateProductSuccess]);
 
     const fetchCategories = async () => {
         try {
@@ -82,12 +102,12 @@ const App: React.FC = () => {
                 await axios.put(`http://localhost:8080/api/categories/${editCategoryId}`, formData, {
                     headers: { 'Content-Type': 'multipart/form-data' },
                 });
-                alert('Категорію оновлено!');
+                setShowUpdateCategorySuccess(true);
             } else {
                 await axios.post('http://localhost:8080/api/categories', formData, {
                     headers: { 'Content-Type': 'multipart/form-data' },
                 });
-                alert('Категорію додано!');
+                setShowAddCategorySuccess(true);
             }
             setCategoryName('');
             setCategoryImage(null);
@@ -112,12 +132,12 @@ const App: React.FC = () => {
                 await axios.put(`http://localhost:8080/api/products/${editProductId}`, formData, {
                     headers: { 'Content-Type': 'multipart/form-data' },
                 });
-                alert('Продукт оновлено!');
+                setShowUpdateProductSuccess(true);
             } else {
                 await axios.post('http://localhost:8080/api/products', formData, {
                     headers: { 'Content-Type': 'multipart/form-data' },
                 });
-                setShowAddSuccess(true); // Показати модальне вікно при додаванні
+                setShowAddProductSuccess(true);
             }
             setProductName('');
             setProductPrice(0);
@@ -136,10 +156,10 @@ const App: React.FC = () => {
             try {
                 if (deleteType === 'category') {
                     await deleteCategory(deleteId).unwrap();
-                    alert('Категорію видалено!');
+                    setShowDeleteCategorySuccess(true);
                 } else if (deleteType === 'product') {
                     await axios.delete(`http://localhost:8080/api/products/${deleteId}`);
-                    setShowDeleteSuccess(true); // Показати модальне вікно при видаленні
+                    setShowDeleteProductSuccess(true);
                 }
                 setDeleteId(null);
                 setDeleteType(null);
@@ -299,8 +319,35 @@ const App: React.FC = () => {
                 </div>
             </div>
 
-            {/* Модальне вікно для успішного додавання */}
-            {showAddSuccess && (
+
+            {showAddCategorySuccess && (
+                <div className="modal">
+                    <div className="modal-content">
+                        <h3>Категорію успішно додано!</h3>
+                    </div>
+                </div>
+            )}
+
+
+            {showDeleteCategorySuccess && (
+                <div className="modal">
+                    <div className="modal-content">
+                        <h3>Категорію успішно видалено!</h3>
+                    </div>
+                </div>
+            )}
+
+
+            {showUpdateCategorySuccess && (
+                <div className="modal">
+                    <div className="modal-content">
+                        <h3>Категорію успішно оновлено!</h3>
+                    </div>
+                </div>
+            )}
+
+
+            {showAddProductSuccess && (
                 <div className="modal">
                     <div className="modal-content">
                         <h3>Продукт успішно додано!</h3>
@@ -308,11 +355,20 @@ const App: React.FC = () => {
                 </div>
             )}
 
-            {/* Модальне вікно для успішного видалення */}
-            {showDeleteSuccess && (
+
+            {showDeleteProductSuccess && (
                 <div className="modal">
                     <div className="modal-content">
                         <h3>Продукт успішно видалено!</h3>
+                    </div>
+                </div>
+            )}
+
+
+            {showUpdateProductSuccess && (
+                <div className="modal">
+                    <div className="modal-content">
+                        <h3>Продукт успішно оновлено!</h3>
                     </div>
                 </div>
             )}
