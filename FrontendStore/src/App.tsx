@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useDeleteCategoryMutation } from './store';
 import axios from 'axios';
 import './App.css';
 
+// Інтерфейси
 interface Category {
     id: number;
     name: string;
@@ -22,12 +24,15 @@ const App: React.FC = () => {
     const [categoryName, setCategoryName] = useState('');
     const [categoryImage, setCategoryImage] = useState<File | null>(null);
     const [editCategoryId, setEditCategoryId] = useState<number | null>(null);
-
     const [productName, setProductName] = useState('');
     const [productPrice, setProductPrice] = useState<number>(0);
     const [productDescription, setProductDescription] = useState('');
     const [productImage, setProductImage] = useState<File | null>(null);
     const [editProductId, setEditProductId] = useState<number | null>(null);
+    const [deleteId, setDeleteId] = useState<number | null>(null); // Для обох (категорій і продуктів)
+    const [deleteType, setDeleteType] = useState<'category' | 'product' | null>(null); // Тип видалення
+
+    const [deleteCategory] = useDeleteCategoryMutation();
 
     useEffect(() => {
         fetchCategories();
@@ -114,28 +119,23 @@ const App: React.FC = () => {
         }
     };
 
-    const handleCategoryDelete = async (id: number) => {
-        if (window.confirm('Дійсно видалити цю категорію?')) {
+    const handleDeleteConfirm = async () => {
+        if (deleteId && deleteType) {
             try {
-                await axios.delete(`http://localhost:8080/api/categories/${id}`);
-                alert('Категорію видалено!');
+                if (deleteType === 'category') {
+                    await deleteCategory(deleteId).unwrap();
+                    alert('Категорію видалено!');
+                } else if (deleteType === 'product') {
+                    await axios.delete(`http://localhost:8080/api/products/${deleteId}`);
+                    alert('Продукт видалено!');
+                }
+                setDeleteId(null);
+                setDeleteType(null);
                 fetchCategories();
-            } catch (error) {
-                console.error('Помилка при видаленні категорії:', error);
-                alert('Не вдалося видалити категорію');
-            }
-        }
-    };
-
-    const handleProductDelete = async (id: number) => {
-        if (window.confirm('Дійсно видалити цей продукт?')) {
-            try {
-                await axios.delete(`http://localhost:8080/api/products/${id}`);
-                alert('Продукт видалено!');
                 fetchProducts();
             } catch (error) {
-                console.error('Помилка при видаленні продукту:', error);
-                alert('Не вдалося видалити продукт');
+                console.error(`Помилка при видаленні ${deleteType}:`, error);
+                alert(`Не вдалося видалити ${deleteType}`);
             }
         }
     };
@@ -152,6 +152,11 @@ const App: React.FC = () => {
         setProductPrice(product.price);
         setProductDescription(product.description);
         setProductImage(null);
+    };
+
+    const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+        console.error(`Не вдалося завантажити зображення: ${e.currentTarget.src}`);
+        e.currentTarget.src = 'https://via.placeholder.com/150?text=Зображення+недоступне';
     };
 
     return (
@@ -189,21 +194,29 @@ const App: React.FC = () => {
                 <div className="category-list">
                     {categories.map((category) => (
                         <div key={category.id} className="category-item">
-                            <div className="image-container">
-                                <img
-                                    src={`http://localhost:8080${category.imageUrl}`}
-                                    alt={category.name}
-                                    className="category-image"
-                                />
-                            </div>
+                            <img
+                                src={`http://localhost:8080${category.imageUrl}`}
+                                alt={category.name}
+                                className="category-image"
+                                onError={handleImageError}
+                            />
                             <div className="category-details">
                                 <h3>{category.name}</h3>
                                 <button onClick={() => startEditingCategory(category)}>Редагувати</button>
-                                <button onClick={() => handleCategoryDelete(category.id)}>Видалити</button>
+                                <button onClick={() => { setDeleteId(category.id); setDeleteType('category'); }}>Видалити</button>
                             </div>
                         </div>
                     ))}
                 </div>
+                {deleteId && deleteType && (
+                    <div className="modal">
+                        <div className="modal-content">
+                            <h3>Ви впевнені, що хочете видалити цю {deleteType}?</h3>
+                            <button onClick={handleDeleteConfirm}>Так</button>
+                            <button onClick={() => { setDeleteId(null); setDeleteType(null); }}>Ні</button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="container">
@@ -259,14 +272,15 @@ const App: React.FC = () => {
                                     src={`http://localhost:8080${product.imageUrl}`}
                                     alt={product.name}
                                     className="product-image"
+                                    onError={handleImageError}
                                 />
                             </div>
                             <div className="product-details">
                                 <h3>{product.name}</h3>
-                                <p>Ціна: {product.price}</p>
+                                <p>Ціна: {product.price} грн</p>
                                 <p>Опис: {product.description}</p>
                                 <button onClick={() => startEditingProduct(product)}>Редагувати</button>
-                                <button onClick={() => handleProductDelete(product.id)}>Видалити</button>
+                                <button onClick={() => { setDeleteId(product.id); setDeleteType('product'); }}>Видалити</button>
                             </div>
                         </div>
                     ))}
