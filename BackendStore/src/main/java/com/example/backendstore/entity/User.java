@@ -21,6 +21,9 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
+    @Column
+    private String imageUrl; // Поле для посилання на фото
+
     // Конструктори
     public User() {}
 
@@ -34,6 +37,8 @@ public class User implements UserDetails {
     public void setId(Long id) { this.id = id; }
     public void setUsername(String username) { this.username = username; }
     public void setPassword(String password) { this.password = password; }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 
     // Методи UserDetails
     @Override

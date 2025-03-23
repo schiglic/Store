@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { useDeleteCategoryMutation } from './store';
 import axios from 'axios';
 import './App.css';
@@ -22,6 +22,11 @@ interface Product {
     imageUrl: string;
 }
 
+interface User {
+    username: string;
+    imageUrl: string | null;
+}
+
 const AppContent: React.FC = () => {
     const [categories, setCategories] = useState<Category[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
@@ -42,6 +47,7 @@ const AppContent: React.FC = () => {
     const [showDeleteProductSuccess, setShowDeleteProductSuccess] = useState(false);
     const [showUpdateProductSuccess, setShowUpdateProductSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [user, setUser] = useState<User | null>(null); // Стан для користувача
 
     const [deleteCategory] = useDeleteCategoryMutation();
     const navigate = useNavigate();
@@ -54,6 +60,8 @@ const AppContent: React.FC = () => {
             return;
         }
 
+        // Завантажуємо інформацію про користувача
+        fetchUser(token);
         fetchCategories(token);
         fetchProducts(token);
 
@@ -83,6 +91,23 @@ const AppContent: React.FC = () => {
             return () => clearTimeout(timer);
         }
     }, [showAddCategorySuccess, showDeleteCategorySuccess, showUpdateCategorySuccess, showAddProductSuccess, showDeleteProductSuccess, showUpdateProductSuccess, navigate]);
+
+    const fetchUser = async (token: string) => {
+        try {
+            const response = await axios.get(`${BASE_URL}/api/auth/me`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+            setUser(response.data);
+        } catch (error) {
+            console.error('Помилка при завантаженні інформації про користувача:', error);
+            setError('Не вдалося завантажити інформацію про користувача');
+            localStorage.removeItem('jwtToken'); // Видаляємо токен, якщо він невалідний
+            setUser(null);
+            navigate('/login');
+        }
+    };
 
     const fetchCategories = async (token: string) => {
         try {
@@ -252,17 +277,34 @@ const AppContent: React.FC = () => {
 
     const handleLogout = () => {
         localStorage.removeItem('jwtToken');
+        setUser(null); // Очищаємо дані користувача при виході
         navigate('/login');
     };
 
     return (
         <div className="App">
+            <div className="user-profile-box">
+                {user ? (
+                    <div className="user-profile">
+                        <img
+                            src={user.imageUrl ? `${BASE_URL}${user.imageUrl}` : 'https://via.placeholder.com/50?text=Аватар'}
+                            alt="Аватар"
+                            className="user-avatar"
+                            onError={handleImageError}
+                        />
+                        <span className="user-name">{user.username}</span>
+                    </div>
+                ) : (
+                    <p>Завантаження...</p>
+                )}
+            </div>
+
             <h1>Керування магазином</h1>
-            <nav style={{ marginBottom: '20px' }}>
-                <Link to="/register" style={{ marginRight: '10px' }}>Реєстрація</Link>
-                <Link to="/login" style={{ marginRight: '10px' }}>Вхід</Link>
-                <button onClick={handleLogout}>Вийти</button>
-            </nav>
+            <div className="auth-buttons" style={{ marginBottom: '20px' }}>
+                <button className="auth-button logout-button" onClick={handleLogout}>
+                    Вийти
+                </button>
+            </div>
 
             {error && <p style={{ color: 'red' }}>{error}</p>}
 
