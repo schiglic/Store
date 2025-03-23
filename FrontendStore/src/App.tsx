@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { useDeleteCategoryMutation } from './store';
 import axios from 'axios';
 import './App.css';
+import Register from './Register';
+import Login from './Login';
+import { BASE_URL } from './constants';
 
 // Інтерфейси
 interface Category {
@@ -18,7 +22,7 @@ interface Product {
     imageUrl: string;
 }
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
     const [categories, setCategories] = useState<Category[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [categoryName, setCategoryName] = useState('');
@@ -37,12 +41,21 @@ const App: React.FC = () => {
     const [showAddProductSuccess, setShowAddProductSuccess] = useState(false);
     const [showDeleteProductSuccess, setShowDeleteProductSuccess] = useState(false);
     const [showUpdateProductSuccess, setShowUpdateProductSuccess] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const [deleteCategory] = useDeleteCategoryMutation();
+    const navigate = useNavigate();
 
     useEffect(() => {
-        fetchCategories();
-        fetchProducts();
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            setError('Будь ласка, увійдіть у систему');
+            navigate('/login');
+            return;
+        }
+
+        fetchCategories(token);
+        fetchProducts(token);
 
         // Автоматичне закриття модальних вікон через 2 секунди
         if (showAddCategorySuccess) {
@@ -69,50 +82,72 @@ const App: React.FC = () => {
             const timer = setTimeout(() => setShowUpdateProductSuccess(false), 2000);
             return () => clearTimeout(timer);
         }
-    }, [showAddCategorySuccess, showDeleteCategorySuccess, showUpdateCategorySuccess, showAddProductSuccess, showDeleteProductSuccess, showUpdateProductSuccess]);
+    }, [showAddCategorySuccess, showDeleteCategorySuccess, showUpdateCategorySuccess, showAddProductSuccess, showDeleteProductSuccess, showUpdateProductSuccess, navigate]);
 
-    const fetchCategories = async () => {
+    const fetchCategories = async (token: string) => {
         try {
-            const response = await axios.get('http://localhost:8080/api/categories');
+            const response = await axios.get(`${BASE_URL}/api/categories`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
             setCategories(response.data);
         } catch (error) {
             console.error('Помилка при завантаженні категорій:', error);
-            alert('Не вдалося завантажити категорії');
+            setError('Не вдалося завантажити категорії');
         }
     };
 
-    const fetchProducts = async () => {
+    const fetchProducts = async (token: string) => {
         try {
-            const response = await axios.get('http://localhost:8080/api/products');
+            const response = await axios.get(`${BASE_URL}/api/products`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+            console.log(response.data);
             setProducts(response.data);
         } catch (error) {
             console.error('Помилка при завантаженні продуктів:', error);
-            alert('Не вдалося завантажити продукти');
+            setError('Не вдалося завантажити продукти');
         }
     };
 
     const handleCategorySubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            setError('Будь ласка, увійдіть у систему');
+            navigate('/login');
+            return;
+        }
+
         const formData = new FormData();
         formData.append('name', categoryName);
         if (categoryImage) formData.append('image', categoryImage);
 
         try {
             if (editCategoryId) {
-                await axios.put(`http://localhost:8080/api/categories/${editCategoryId}`, formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
+                await axios.put(`${BASE_URL}/api/categories/${editCategoryId}`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        'Authorization': `Bearer ${token}`,
+                    },
                 });
                 setShowUpdateCategorySuccess(true);
             } else {
-                await axios.post('http://localhost:8080/api/categories', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
+                await axios.post(`${BASE_URL}/api/categories`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        'Authorization': `Bearer ${token}`,
+                    },
                 });
                 setShowAddCategorySuccess(true);
             }
             setCategoryName('');
             setCategoryImage(null);
             setEditCategoryId(null);
-            fetchCategories();
+            fetchCategories(token);
         } catch (error) {
             console.error('Помилка при обробці категорії:', error);
             alert('Не вдалося обробити категорію');
@@ -121,6 +156,13 @@ const App: React.FC = () => {
 
     const handleProductSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            setError('Будь ласка, увійдіть у систему');
+            navigate('/login');
+            return;
+        }
+
         const formData = new FormData();
         formData.append('name', productName);
         formData.append('price', String(productPrice));
@@ -129,13 +171,19 @@ const App: React.FC = () => {
 
         try {
             if (editProductId) {
-                await axios.put(`http://localhost:8080/api/products/${editProductId}`, formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
+                await axios.put(`${BASE_URL}/api/products/${editProductId}`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        'Authorization': `Bearer ${token}`,
+                    },
                 });
                 setShowUpdateProductSuccess(true);
             } else {
-                await axios.post('http://localhost:8080/api/products', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
+                await axios.post(`${BASE_URL}/api/products`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        'Authorization': `Bearer ${token}`,
+                    },
                 });
                 setShowAddProductSuccess(true);
             }
@@ -144,7 +192,7 @@ const App: React.FC = () => {
             setProductDescription('');
             setProductImage(null);
             setEditProductId(null);
-            fetchProducts();
+            fetchProducts(token);
         } catch (error) {
             console.error('Помилка при обробці продукту:', error);
             alert('Не вдалося обробити продукт');
@@ -152,19 +200,30 @@ const App: React.FC = () => {
     };
 
     const handleDeleteConfirm = async () => {
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            setError('Будь ласка, увійдіть у систему');
+            navigate('/login');
+            return;
+        }
+
         if (deleteId && deleteType) {
             try {
                 if (deleteType === 'category') {
                     await deleteCategory(deleteId).unwrap();
                     setShowDeleteCategorySuccess(true);
                 } else if (deleteType === 'product') {
-                    await axios.delete(`http://localhost:8080/api/products/${deleteId}`);
+                    await axios.delete(`${BASE_URL}/api/products/${deleteId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                        },
+                    });
                     setShowDeleteProductSuccess(true);
                 }
                 setDeleteId(null);
                 setDeleteType(null);
-                fetchCategories();
-                fetchProducts();
+                fetchCategories(token);
+                fetchProducts(token);
             } catch (error) {
                 console.error(`Помилка при видаленні ${deleteType}:`, error);
                 alert(`Не вдалося видалити ${deleteType}`);
@@ -191,9 +250,21 @@ const App: React.FC = () => {
         e.currentTarget.src = 'https://via.placeholder.com/150?text=Зображення+недоступне';
     };
 
+    const handleLogout = () => {
+        localStorage.removeItem('jwtToken');
+        navigate('/login');
+    };
+
     return (
         <div className="App">
             <h1>Керування магазином</h1>
+            <nav style={{ marginBottom: '20px' }}>
+                <Link to="/register" style={{ marginRight: '10px' }}>Реєстрація</Link>
+                <Link to="/login" style={{ marginRight: '10px' }}>Вхід</Link>
+                <button onClick={handleLogout}>Вийти</button>
+            </nav>
+
+            {error && <p style={{ color: 'red' }}>{error}</p>}
 
             <div className="container">
                 <h2>{editCategoryId ? 'Оновити категорію' : 'Додати категорію'}</h2>
@@ -227,7 +298,7 @@ const App: React.FC = () => {
                     {categories.map((category) => (
                         <div key={category.id} className="category-item">
                             <img
-                                src={`http://localhost:8080${category.imageUrl}`}
+                                src={`${BASE_URL}${category.imageUrl}`}
                                 alt={category.name}
                                 className="category-image"
                                 onError={handleImageError}
@@ -301,7 +372,7 @@ const App: React.FC = () => {
                         <div key={product.id} className="product-item">
                             <div className="image-container">
                                 <img
-                                    src={`http://localhost:8080${product.imageUrl}`}
+                                    src={`${BASE_URL}${product.imageUrl}`}
                                     alt={product.name}
                                     className="product-image"
                                     onError={handleImageError}
@@ -319,7 +390,6 @@ const App: React.FC = () => {
                 </div>
             </div>
 
-
             {showAddCategorySuccess && (
                 <div className="modal">
                     <div className="modal-content">
@@ -327,7 +397,6 @@ const App: React.FC = () => {
                     </div>
                 </div>
             )}
-
 
             {showDeleteCategorySuccess && (
                 <div className="modal">
@@ -337,7 +406,6 @@ const App: React.FC = () => {
                 </div>
             )}
 
-
             {showUpdateCategorySuccess && (
                 <div className="modal">
                     <div className="modal-content">
@@ -345,7 +413,6 @@ const App: React.FC = () => {
                     </div>
                 </div>
             )}
-
 
             {showAddProductSuccess && (
                 <div className="modal">
@@ -355,7 +422,6 @@ const App: React.FC = () => {
                 </div>
             )}
 
-
             {showDeleteProductSuccess && (
                 <div className="modal">
                     <div className="modal-content">
@@ -363,7 +429,6 @@ const App: React.FC = () => {
                     </div>
                 </div>
             )}
-
 
             {showUpdateProductSuccess && (
                 <div className="modal">
@@ -373,6 +438,18 @@ const App: React.FC = () => {
                 </div>
             )}
         </div>
+    );
+};
+
+const App: React.FC = () => {
+    return (
+        <Router>
+            <Routes>
+                <Route path="/register" element={<Register />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/" element={<AppContent />} />
+            </Routes>
+        </Router>
     );
 };
 
